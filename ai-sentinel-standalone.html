@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI-Sentinel — Standalone (no server needed)</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#0b1220;color:#e2e8f0}
+header{padding:28px 24px 10px;max-width:1180px;margin:0 auto;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.logo{width:56px;height:56px;border-radius:14px;background:linear-gradient(135deg,#14b8a6,#0ea5e9);display:grid;place-items:center;font-size:28px}
+header h1{margin:0;font-size:30px} header h1 span{color:#5eead4}
+header p{margin:4px 0 0;color:#94a3b8;max-width:760px}
+.wrap{max-width:1180px;margin:0 auto;padding:16px 24px 40px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+.card{background:#111e33;border:1px solid #1e3a4c;border-radius:16px;padding:18px}
+.card h2{margin:0 0 10px;font-size:18px} .card h3{margin:14px 0 6px;font-size:14px;color:#cbd5e1}
+textarea{width:100%;min-height:360px;background:#020617;color:#e2e8f0;border:1px solid #334155;border-radius:12px;padding:14px;font-family:ui-monospace,Consolas,monospace;font-size:13px;line-height:1.5;resize:vertical}
+textarea:focus{outline:2px solid #14b8a6}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+button{border:0;border-radius:999px;padding:9px 14px;font-weight:600;cursor:pointer}
+.primary{background:#14b8a6;color:#042f2e;font-size:15px;padding:11px 20px}
+.secondary{background:#1e293b;color:#e2e8f0;border:1px solid #334155}
+select,input[type=file]{background:#0f172a;color:#e2e8f0;border:1px solid #334155;border-radius:10px;padding:9px 10px}
+label{font-size:13px;color:#94a3b8}
+.score-wrap{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.ring{width:110px;height:110px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(#14b8a6 var(--p,0%),#1e293b 0);position:relative}
+.ring::before{content:"";position:absolute;inset:10px;background:#111e33;border-radius:50%}
+.ring b{position:relative;font-size:26px} .ring small{position:relative;display:block;text-align:center;color:#94a3b8;font-size:11px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+.stat{background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px;text-align:center}
+.stat b{display:block;font-size:22px} .stat span{font-size:12px;color:#94a3b8}
+.crit b{color:#f87171}.high b{color:#fb923c}.med b{color:#facc15}.low b{color:#4ade80}
+.finding{border:1px solid #334155;border-radius:14px;padding:14px;margin-top:12px;background:#0f172a}
+.finding h3{margin:0;font-size:16px}
+.badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:700;margin-left:8px}
+.Critical{background:#7f1d1d;color:#fecaca}.High{background:#7c2d12;color:#fed7aa}.Medium{background:#713f12;color:#fef08a}.Low{background:#14532d;color:#bbf7d0}
+.meta{color:#94a3b8;font-size:13px;margin-top:4px}
+pre{background:#020617;border:1px solid #1e293b;border-radius:10px;padding:12px;overflow:auto;font-size:13px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.why{margin:8px 0 0;padding-left:18px;color:#cbd5e1;font-size:14px} .why li{margin:3px 0}
+.empty{color:#94a3b8;text-align:center;padding:24px} .hint{font-size:13px;color:#94a3b8;line-height:1.6}
+.pill{display:inline-block;background:#0f172a;border:1px solid #334155;border-radius:999px;padding:4px 10px;font-size:12px;margin:2px}
+footer{max-width:1180px;margin:0 auto;padding:0 24px 30px;color:#64748b;font-size:13px}
+</style>
+</head>
+<body>
+<header>
+<div class="logo">🛡</div>
+<div><h1>AI-<span>Sentinel</span></h1>
+<p>Standalone version — runs entirely in your browser, no server, no install. Download this file, double-click it, paste Python code and press Analyze. This is the same analysis as the Flask version.</p>
+</div>
+</header>
+<div class="wrap"><div class="grid">
+<div class="card">
+<h2>1. Your code</h2>
+<p class="hint">Try a sample first, or paste your own AI-generated Python code. <span id="fileName"></span></p>
+<div class="row" id="sampleBtns"></div>
+<textarea id="code" placeholder="Paste Python code here..."></textarea>
+<div class="row"><input type="file" id="fileInput" accept=".py,.txt"></div>
+<h3>2. Context (this changes the ranking)</h3>
+<div class="row">
+<label>Deployment <select id="deployment"><option value="public_api">Public web API</option><option value="internal">Internal tool</option></select></label>
+<label><input type="checkbox" id="sensitiveData"> Handles sensitive data</label>
+</div>
+<p class="hint">Try the same sample as Public API vs Internal tool and watch the scores move.</p>
+<div class="row"><button class="primary" id="analyzeBtn">Analyze code</button></div>
+<h3>What it checks</h3>
+<p><span class="pill">SQL injection</span><span class="pill">Command injection</span><span class="pill">eval / exec</span><span class="pill">XSS</span><span class="pill">Hardcoded secrets</span><span class="pill">Weak crypto</span><span class="pill">Insecure random</span><span class="pill">Pickle / YAML</span><span class="pill">Path traversal</span><span class="pill">SSRF</span><span class="pill">Debug mode</span><span class="pill">Route without auth</span></p>
+</div>
+<div class="card" id="results"><p class="empty">Paste code or try a sample, then press Analyze.</p></div>
+</div>
+<div class="card" style="margin-top:18px"><h2>How context-aware works here</h2>
+<p class="hint">A plain scanner flags every pattern equally. AI-Sentinel tracks whether user input (request.form, request.args, input) actually flows into the dangerous call, checks if the code sits on a Flask route, whether that route has a login check, and whether it touches passwords, payments or tokens. The risk score goes up for reachable, public, sensitive flaws, and down for unreachable or internal ones. Results are sorted by risk score, not just by bug type.</p></div>
+</div>
+<footer>Standalone build of AI-Sentinel. A clean scan means none of the checked patterns matched — it is not a guarantee of perfect security.</footer>
+<script>
+const SAMPLES = {
+"vulnerable_login.py": `from flask import Flask, request
+import sqlite3
+
+app = Flask(__name__)
+ADMIN_PASSWORD = "admin123"
+
+@app.route('/login', methods=['POST'])
+def login():
+    username = request.form['username']
+    password = request.form['password']
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+    query = f"SELECT * FROM users WHERE username = '{username}' AND password = '{password}'"
+    cursor.execute(query)
+    user = cursor.fetchone()
+    if user:
+        return f"<h1>Welcome {username}</h1>"
+    return "Login failed"
+
+if __name__ == '__main__':
+    app.run(debug=True)`,
+"xss_command.py": `from flask import Flask, request, render_template_string
+import os
+
+app = Flask(__name__)
+
+@app.route('/greet')
+def greet():
+    name = request.args.get('name', 'guest')
+    return render_template_string(f"<h1>Hello {name}</h1>")
+
+@app.route('/ping')
+def ping():
+    host = request.args.get('host', 'localhost')
+    os.system("ping -c 1 " + host)
+    return "Done"
+
+@app.route('/run')
+def run():
+    cmd = request.args.get('cmd', '')
+    eval(cmd)
+    return "Done"`,
+"payment_ssrf.py": `from flask import Flask, request
+import requests
+import hashlib
+import pickle
+import random
+
+app = Flask(__name__)
+API_KEY = "sk-live-1234567890abcdef"
+
+@app.route('/pay', methods=['POST'])
+def pay():
+    card_token = request.form['card_token']
+    token_hash = hashlib.md5(card_token.encode()).hexdigest()
+    otp = random.randint(1000, 9999)
+    url = request.form['callback_url']
+    requests.get(url)
+    data = request.form['data']
+    obj = pickle.loads(data.encode())
+    return "Payment processed"`,
+"secure_example.py": `from flask import Flask, request, render_template
+import sqlite3
+import os
+import secrets
+import hashlib
+
+app = Flask(__name__)
+SECRET_KEY = os.environ.get('SECRET_KEY')
+
+@app.route('/login', methods=['POST'])
+def login():
+    username = request.form['username']
+    password = request.form['password']
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT * FROM users WHERE username = ?",
+        (username,)
+    )
+    user = cursor.fetchone()
+    if user:
+        token = secrets.token_hex(16)
+        digest = hashlib.sha256(password.encode()).hexdigest()
+        return render_template('welcome.html', username=username, token=token)
+    return "Login failed"
+
+if __name__ == '__main__':
+    app.run(debug=False)`
+};
+const SENSITIVE = ["password","passwd","pwd","secret","token","api_key","apikey","payment","card","credit","bank","ssn","email","phone","otp","private","admin","salary","aadhaar"];
+const SOURCE_RE = /(request\.(args|form|json|values|data|cookies|headers)|input\(|sys\.argv)/;
+function hasVar(text, name){ return new RegExp("\\b" + name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b").test(text || ""); }
+function esc(s){ return String(s == null ? "" : s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function analyzeCode(code, uiCtx){
+  uiCtx = uiCtx || {};
+  const lines = (code || "").splitlines ? (code || "").split("\n") : String(code || "").split("\n");
+  const funcs = []; const routes = [];
+  let pending = [];
+  lines.forEach((raw, idx) => {
+    const t = raw.trim();
+    if (t.startsWith("@")) { pending.push(t); return; }
+    const dm = t.match(/^def\s+([A-Za-z_]\w*)\s*\(/);
+    if (dm) {
+      const name = dm[1];
+      const routeDec = pending.find(d => d.includes(".route(") || d.startsWith("route("));
+      const hasAuth = pending.some(d => /login_required|jwt_required|requires_auth|authenticate/.test(d));
+      funcs.push({name: name, line: idx, route: null, hasAuth: hasAuth});
+      if (routeDec) {
+        const pm = routeDec.match(/['"]([^'"]+)['"]/);
+        const r = {path: pm ? pm[1] : "/", func: name, line: idx, hasAuth: hasAuth};
+        routes.push(r); funcs[funcs.length-1].route = r;
+      }
+      pending = [];
+    } else if (t !== "") { pending = []; }
+  });
+  const assignments = [];
+  lines.forEach((raw) => {
+    const m = raw.match(/^\s*([A-Za-z_]\w*)\s*=\s*(.+)$/);
+    if (m && !m[2].trim().startsWith("=")) assignments.push({target: m[1], value: m[2]});
+  });
+  const tainted = new Set();
+  for (let pass = 0; pass < 4; pass++) {
+    let changed = false;
+    assignments.forEach(a => {
+      if (SOURCE_RE.test(a.value) || Array.from(tainted).some(v => hasVar(a.value, v))) {
+        if (!tainted.has(a.target)) { tainted.add(a.target); changed = true; }
+      }
+    });
+    if (!changed) break;
+  }
+  function enclosingRoute(lineIdx){
+    let enc = null;
+    funcs.forEach(f => { if (f.line <= lineIdx) enc = f; });
+    return enc && enc.route ? enc.route : null;
+  }
+  const findings = [];
+  function scoreAndAdd(base, title, cwe, lineIdx, desc, fix, extraSensitive){
+    const lineText = lines[lineIdx] || "";
+    const route = enclosingRoute(lineIdx);
+    const isTainted = Array.from(tainted).some(v => hasVar(lineText, v)) || SOURCE_RE.test(lineText);
+    const sensitive = extraSensitive || SENSITIVE.some(w => lineText.toLowerCase().includes(w));
+    const publicRoute = !!(route && !route.hasAuth);
+    let score = base; const why = [];
+    if (isTainted) { score += 1.5; why.push("User input actually reaches this code (tainted flow)"); }
+    if (publicRoute) { score += 0.8; why.push("On a public route with no login check found"); }
+    if (sensitive) { score += 0.7; why.push("Handles sensitive data (password / payment / token / personal data)"); }
+    if (uiCtx.deployment === "public_api") { score += 0.5; why.push("Deployment is a public-facing API"); }
+    else if (uiCtx.deployment === "internal") { score -= 1.0; why.push("Deployment is an internal tool, lower exposure"); }
+    if (uiCtx.sensitive_data) { score += 0.3; why.push("Project marked as handling sensitive data"); }
+    if (!isTainted && !route) { score -= 1.5; why.push("Not reachable from a route or user input in this file"); }
+    score = Math.max(0, Math.min(10, Math.round(score * 10) / 10));
+    const level = score >= 9 ? "Critical" : score >= 7 ? "High" : score >= 4 ? "Medium" : "Low";
+    findings.push({title: title, cwe: cwe, line: lineIdx + 1, code: lineText.trim(), description: desc, fix: fix, risk_score: score, level: level, why: why, context: {tainted_flow: isTainted, route: route ? route.path : null, public_route: publicRoute, sensitive: !!sensitive}});
+  }
+  lines.forEach((raw, idx) => {
+    const low = raw.toLowerCase();
+    const hm = raw.match(/^\s*(?:[A-Za-z_]\w*\.)?([A-Za-z_]\w*)\s*=\s*['"]([^'"]{4,})['"]/);
+    if (hm && SENSITIVE.some(w => hm[1].toLowerCase().includes(w)) && !low.includes("environ") && !low.includes("getenv") && !raw.includes("{")) {
+      scoreAndAdd(7.5, "Hardcoded secret", "CWE-798", idx, "A secret is written directly in the code. Anyone who sees the code, including in git history, gets it.", "Load it from an environment variable: SECRET = os.environ['API_KEY'] — never commit the real value.", true);
+    }
+    if (/AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,}/.test(raw)) {
+      scoreAndAdd(9.0, "Exposed cloud / API key", "CWE-798", idx, "A real-looking cloud or API key pattern was found in the code. Rotate it immediately if it was ever committed.", "Revoke the key, issue a new one, and store it in environment variables or a secret manager.", true);
+    }
+    if (/\.run\s*\([^)]*debug\s*=\s*True/.test(raw)) {
+      scoreAndAdd(5.0, "Debug mode enabled", "CWE-489", idx, "Flask debug mode exposes an interactive debugger and stack traces to anyone who can reach the app.", "Use app.run(debug=False) in production, or better, run behind gunicorn / a real server.", false);
+    }
+    if (/\.(execute|executemany|query)\s*\(/.test(raw)) {
+      const after = raw.slice(raw.indexOf("(") + 1);
+      const firstArg = after.split(",")[0].trim();
+      const formatted = firstArg.startsWith('f"') || firstArg.startsWith("f'") || firstArg.includes("+") || firstArg.includes(".format(") || Array.from(tainted).some(v => hasVar(firstArg, v));
+      if (formatted) scoreAndAdd(9.0, "SQL injection", "CWE-89", idx, "User input is built directly into a SQL query. An attacker can change the query and read, change or delete data.", "Use a parameterized query: cursor.execute('SELECT * FROM users WHERE username = ?', (username,))", false);
+    }
+    if (/os\.(system|popen)\s*\(/.test(raw) || (/subprocess\./.test(raw) && /shell\s*=\s*True/.test(raw))) {
+      scoreAndAdd(9.0, "Command injection", "CWE-78", idx, "A shell command is built from input or run with shell=True. An attacker can run OS commands on the server.", "Avoid the shell: subprocess.run(['ls', filename], shell=False) and validate the input first.", false);
+    }
+    if (/\b(eval|exec)\s*\(/.test(raw)) {
+      scoreAndAdd(9.0, "Code injection (eval / exec)", "CWE-95", idx, "eval() / exec() runs input as Python code. Any attacker-controlled input here is full code execution.", "Do not use eval/exec on user data. Parse data with json.loads or ast.literal_eval for literals only.", false);
+    }
+    if (/render_template_string\s*\(/.test(raw)) {
+      scoreAndAdd(7.5, "Cross-site scripting (XSS)", "CWE-79", idx, "render_template_string with user data renders it as HTML. An attacker can inject JavaScript into other users' browsers.", "Use render_template() with a template file — Jinja auto-escapes variables — instead of building HTML from input.", false);
+    }
+    if (/pickle\.(loads?|load)\s*\(|marshal\.(loads?|load)\s*\(/.test(raw)) {
+      scoreAndAdd(9.0, "Unsafe deserialization", "CWE-502", idx, "pickle / marshal can execute code while loading data. Loading untrusted data here is remote code execution.", "Use json.loads for untrusted data. Only unpickle data you created and trust completely.", false);
+    }
+    if (/yaml\.load\s*\(/.test(raw) && !raw.includes("SafeLoader") && !raw.includes("safe_load")) {
+      scoreAndAdd(7.5, "Unsafe YAML loading", "CWE-502", idx, "yaml.load without SafeLoader can construct arbitrary Python objects from untrusted YAML.", "Use yaml.safe_load(data) instead of yaml.load(data).", false);
+    }
+    if (/requests\.(get|post|put|delete)\s*\(|urllib\.request\.urlopen\s*\(|urlopen\s*\(/.test(raw)) {
+      scoreAndAdd(7.5, "Server-side request forgery (SSRF)", "CWE-918", idx, "The app fetches a URL that may come from user input. An attacker can make the server hit internal services.", "Allow-list hosts, validate the URL, and block private / localhost addresses before fetching.", false);
+    }
+    if (/\b(open|send_file)\s*\(/.test(raw) && (Array.from(tainted).some(v => hasVar(raw, v)) || SOURCE_RE.test(raw))) {
+      scoreAndAdd(7.5, "Path traversal", "CWE-22", idx, "A file path built from user input is opened directly. An attacker can use ../ to read files outside the intended folder.", "Resolve the path, check it stays inside the allowed folder, and reject names containing / or ..", false);
+    }
+    if (/hashlib\.(md5|sha1)\s*\(/.test(raw)) {
+      scoreAndAdd(5.0, "Weak hash (MD5 / SHA1)", "CWE-327", idx, "MD5 and SHA1 are broken for security use and are fast to brute-force, especially for passwords.", "For passwords use bcrypt / argon2. For general hashing use hashlib.sha256 or sha3_256.", false);
+    }
+    if (/random\./.test(raw) && /(token|password|secret|key|otp)/i.test(raw)) {
+      scoreAndAdd(5.0, "Insecure random for security value", "CWE-338", idx, "Python's random module is predictable and must not be used for tokens, passwords or OTPs.", "Use the secrets module: secrets.token_hex(16) or secrets.choice(...) for security values.", true);
+    }
+    const trimmed = raw.trim();
+    if (trimmed.startsWith("return") && !raw.includes("render_template_string") && (trimmed.includes('f"') || trimmed.includes("f'")) && Array.from(tainted).some(v => hasVar(raw, v))) {
+      scoreAndAdd(7.5, "Reflected XSS (user input in response)", "CWE-79", idx, "User input is returned directly in an HTML response without escaping, so script tags in the input can run in a victim's browser.", "Return a template with render_template() so Jinja escapes the value, or escape it with html.escape().", false);
+    }
+  });
+  routes.forEach(r => {
+    if (!r.hasAuth && /(admin|payment|delete|settings|billing)/.test(r.func) && !/(login|register)/.test(r.func)) {
+      scoreAndAdd(7.5, "Sensitive route without login check", "CWE-862", r.line, "The " + r.path + " route (" + r.func + ") handles sensitive actions but has no login check decorator.", "Add @login_required (or your auth decorator) to this route and check the user's permission.", true);
+    }
+  });
+  const seen = new Set(); const unique = [];
+  findings.forEach(f => { const k = f.title + "|" + f.line; if (!seen.has(k)) { seen.add(k); unique.push(f); } });
+  unique.sort((a,b) => b.risk_score - a.risk_score);
+  const counts = {Critical: 0, High: 0, Medium: 0, Low: 0};
+  unique.forEach(f => counts[f.level]++);
+  const security_score = Math.max(0, 100 - (counts.Critical*25 + counts.High*15 + counts.Medium*8 + counts.Low*3));
+  const grade = security_score >= 90 ? "A" : security_score >= 75 ? "B" : security_score >= 60 ? "C" : security_score >= 40 ? "D" : "F";
+  return {summary: {total: unique.length, critical: counts.Critical, high: counts.High, medium: counts.Medium, low: counts.Low, security_score: security_score, grade: grade, max_risk: unique.length ? unique[0].risk_score : 0, lines: lines.length, routes: routes.map(r => r.path)}, findings: unique};
+}
+if (typeof document !== "undefined") {
+  let lastResult = null; let filterLevel = "All";
+  function render(){
+    const box = document.getElementById("results");
+    if (!lastResult) { box.innerHTML = '<p class="empty">Paste code or try a sample, then press Analyze.</p>'; return; }
+    const s = lastResult.summary;
+    const findings = lastResult.findings.filter(f => filterLevel === "All" || f.level === filterLevel);
+    let html = '<div class="score-wrap"><div class="ring" style="--p:' + s.security_score + '%"><div style="position:relative;text-align:center"><b>' + s.security_score + '</b><small>Grade ' + s.grade + ' / 100</small></div></div><div><h2 style="margin:0">Security report</h2><p class="hint" style="margin:6px 0">' + s.total + ' finding(s) in ' + s.lines + ' lines. Highest risk: ' + s.max_risk + '/10. ' + (s.routes.length ? "Routes found: " + s.routes.map(esc).join(", ") : "No Flask routes found in this file.") + '</p><p class="hint">Sorted by risk, not just by severity. A bug on a public route with user input reaching it ranks higher than the same bug hidden inside an internal helper.</p></div></div><div class="stats"><div class="stat crit"><b>' + s.critical + '</b><span>Critical</span></div><div class="stat high"><b>' + s.high + '</b><span>High</span></div><div class="stat med"><b>' + s.medium + '</b><span>Medium</span></div><div class="stat low"><b>' + s.low + '</b><span>Low</span></div></div><div class="row" style="margin-top:14px">' + ["All","Critical","High","Medium","Low"].map(l => '<button class="secondary" data-filter="' + l + '">' + l + '</button>').join("") + '</div>';
+    if (!findings.length) html += '<p class="empty">No findings at this filter level.' + (s.total === 0 ? " Clean scan — no known patterns found. That does not prove the code is perfectly secure, only that none of the checked patterns matched." : "") + '</p>';
+    findings.forEach(f => {
+      html += '<div class="finding"><h3>' + esc(f.title) + '<span class="badge ' + esc(f.level) + '">' + esc(f.level) + ' ' + f.risk_score + '/10</span></h3><div class="meta">' + esc(f.cwe) + ' &middot; Line ' + f.line + (f.context.route ? " &middot; Route " + esc(f.context.route) : "") + (f.context.tainted_flow ? " &middot; User input reaches this code" : "") + (f.context.public_route ? " &middot; Public route, no login check" : "") + '</div><p>' + esc(f.description) + '</p><pre>' + esc(f.code) + '</pre><h3 style="font-size:14px">Why this score</h3><ul class="why">' + f.why.map(w => '<li>' + esc(w) + '</li>').join("") + '</ul><h3 style="font-size:14px">Secure fix</h3><pre>' + esc(f.fix) + '</pre></div>';
+    });
+    box.innerHTML = html;
+    document.querySelectorAll("[data-filter]").forEach(b => { b.style.outline = b.dataset.filter === filterLevel ? "2px solid #14b8a6" : "none"; b.onclick = () => { filterLevel = b.dataset.filter; render(); }; });
+  }
+  const labels = {"vulnerable_login.py": "Vulnerable login (SQLi)", "xss_command.py": "XSS + command injection", "payment_ssrf.py": "Payment SSRF + secrets", "secure_example.py": "Secure example (clean)"};
+  const box = document.getElementById("sampleBtns");
+  Object.keys(SAMPLES).forEach(k => { const b = document.createElement("button"); b.className = "secondary"; b.textContent = labels[k] || k; b.onclick = () => { document.getElementById("code").value = SAMPLES[k]; document.getElementById("fileName").textContent = k; }; box.appendChild(b); });
+  document.getElementById("code").value = SAMPLES["vulnerable_login.py"]; document.getElementById("fileName").textContent = "vulnerable_login.py";
+  document.getElementById("fileInput").addEventListener("change", async (e) => { const f = e.target.files[0]; if (!f) return; document.getElementById("code").value = await f.text(); document.getElementById("fileName").textContent = f.name; });
+  document.getElementById("analyzeBtn").onclick = () => {
+    const code = document.getElementById("code").value;
+    if (!code.trim()) { alert("Paste some Python code first."); return; }
+    lastResult = analyzeCode(code, {deployment: document.getElementById("deployment").value, sensitive_data: document.getElementById("sensitiveData").checked});
+    filterLevel = "All"; render();
+    document.getElementById("results").scrollIntoView({behavior: "smooth", block: "start"});
+  };
+  render();
+}
+</script>
+</body>
+</html>

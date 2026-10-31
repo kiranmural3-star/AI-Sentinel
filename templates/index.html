@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI-Sentinel — Context-Aware Security Analysis</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <div class="logo">🛡</div>
+  <div>
+    <h1>AI-<span>Sentinel</span></h1>
+    <p>Context-aware security analysis and risk prioritization for AI-generated software. Paste Python code, and it finds the flaws, explains the context, and ranks what to fix first.</p>
+  </div>
+</header>
+<div class="wrap">
+  <div class="grid">
+    <div class="card">
+      <h2>1. Your code</h2>
+      <p class="hint">Try a sample first, or paste your own AI-generated Python code. <span id="fileName"></span></p>
+      <div class="row" id="sampleBtns"></div>
+      <textarea id="code" placeholder="Paste Python code here..."></textarea>
+      <div class="row">
+        <input type="file" id="fileInput" accept=".py,.txt">
+      </div>
+      <h3>2. Context (this changes the ranking)</h3>
+      <div class="row">
+        <label>Deployment
+          <select id="deployment">
+            <option value="public_api">Public web API</option>
+            <option value="internal">Internal tool</option>
+          </select>
+        </label>
+        <label><input type="checkbox" id="sensitiveData"> Handles sensitive data</label>
+      </div>
+      <p class="hint">Same bug, different context, different priority. Try the same sample as “Public API” vs “Internal tool” and watch the scores move.</p>
+      <div class="row">
+        <button class="primary" id="analyzeBtn">Analyze code</button>
+      </div>
+      <h3>What it checks</h3>
+      <p>
+        <span class="pill">SQL injection</span><span class="pill">Command injection</span><span class="pill">eval / exec</span><span class="pill">XSS</span><span class="pill">Hardcoded secrets</span><span class="pill">Weak crypto</span><span class="pill">Insecure random</span><span class="pill">Pickle / YAML</span><span class="pill">Path traversal</span><span class="pill">SSRF</span><span class="pill">Debug mode</span><span class="pill">Route without auth</span>
+      </p>
+    </div>
+    <div class="card" id="results">
+      <p class="empty">Paste code or try a sample, then press Analyze.</p>
+    </div>
+  </div>
+  <div class="card" style="margin-top:18px">
+    <h2>How “context-aware” works here</h2>
+    <p class="hint">A plain scanner flags every pattern equally. AI-Sentinel parses the code, tracks whether user input (request.form, request.args, input) actually flows into the dangerous call, checks if the code sits on a Flask route, whether that route has a login check, and whether it touches passwords, payments or tokens. The risk score then goes up for reachable, public, sensitive flaws, and down for unreachable or internal ones. That is why the report is sorted by risk score, not just by bug type.</p>
+  </div>
+</div>
+<footer>Built with Python + Flask, analysis runs locally with no external API. A clean scan means none of the checked patterns matched — it is not a guarantee of perfect security.</footer>
+<script src="/static/app.js"></script>
+</body>
+</html>
