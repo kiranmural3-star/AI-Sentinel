@@ -3,6 +3,7 @@ import os
 from flask import Flask, jsonify, render_template, request
 
 from analyzer import analyze_code
+from fixer import fix_code
 
 app = Flask(__name__)
 BASE = os.path.dirname(os.path.abspath(__file__))
@@ -25,6 +26,25 @@ def api_analyze():
     }
     result = analyze_code(code, ui_ctx)
     return jsonify(result)
+
+
+@app.route("/api/fix", methods=["POST"])
+def api_fix():
+    data = request.get_json(silent=True) or {}
+    code = data.get("code", "")
+    if not code.strip():
+        return jsonify({"error": "No code provided. Paste some Python code first."}), 400
+    ui_ctx = {
+        "deployment": data.get("deployment", "public_api"),
+        "sensitive_data": bool(data.get("sensitive_data", False)),
+    }
+    fixed, changes = fix_code(code)
+    return jsonify({
+        "fixed_code": fixed,
+        "changes": changes,
+        "original": analyze_code(code, ui_ctx),
+        "fixed": analyze_code(fixed, ui_ctx),
+    })
 
 
 @app.route("/api/samples")

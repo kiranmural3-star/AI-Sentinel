@@ -3,56 +3,139 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AI-Sentinel — Context-Aware Security Analysis</title>
+<title>AI-Sentinel — Intelligent Security Analysis of AI-Generated Software</title>
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-<header>
-  <div class="logo">🛡</div>
-  <div>
-    <h1>AI-<span>Sentinel</span></h1>
-    <p>Context-aware security analysis and risk prioritization for AI-generated software. Paste Python code, and it finds the flaws, explains the context, and ranks what to fix first.</p>
-  </div>
-</header>
+<div class="topbar"><div class="topbar-inner">
+<div class="brand"><div class="logo">🛡</div> AI-SENTINEL</div>
+<nav><a href="#analyzer">Analyzer</a><a href="#pipeline">Pipeline</a><a href="#modules">Modules</a><a href="#vulnerabilities">Vulnerabilities</a><a href="#risk">Risk</a></nav>
+</div></div>
 <div class="wrap">
-  <div class="grid">
-    <div class="card">
-      <h2>1. Your code</h2>
-      <p class="hint">Try a sample first, or paste your own AI-generated Python code. <span id="fileName"></span></p>
-      <div class="row" id="sampleBtns"></div>
-      <textarea id="code" placeholder="Paste Python code here..."></textarea>
-      <div class="row">
-        <input type="file" id="fileInput" accept=".py,.txt">
-      </div>
-      <h3>2. Context (this changes the ranking)</h3>
-      <div class="row">
-        <label>Deployment
-          <select id="deployment">
-            <option value="public_api">Public web API</option>
-            <option value="internal">Internal tool</option>
-          </select>
-        </label>
-        <label><input type="checkbox" id="sensitiveData"> Handles sensitive data</label>
-      </div>
-      <p class="hint">Same bug, different context, different priority. Try the same sample as “Public API” vs “Internal tool” and watch the scores move.</p>
-      <div class="row">
-        <button class="primary" id="analyzeBtn">Analyze code</button>
-      </div>
-      <h3>What it checks</h3>
-      <p>
-        <span class="pill">SQL injection</span><span class="pill">Command injection</span><span class="pill">eval / exec</span><span class="pill">XSS</span><span class="pill">Hardcoded secrets</span><span class="pill">Weak crypto</span><span class="pill">Insecure random</span><span class="pill">Pickle / YAML</span><span class="pill">Path traversal</span><span class="pill">SSRF</span><span class="pill">Debug mode</span><span class="pill">Route without auth</span>
-      </p>
-    </div>
-    <div class="card" id="results">
-      <p class="empty">Paste code or try a sample, then press Analyze.</p>
-    </div>
-  </div>
-  <div class="card" style="margin-top:18px">
-    <h2>How “context-aware” works here</h2>
-    <p class="hint">A plain scanner flags every pattern equally. AI-Sentinel parses the code, tracks whether user input (request.form, request.args, input) actually flows into the dangerous call, checks if the code sits on a Flask route, whether that route has a login check, and whether it touches passwords, payments or tokens. The risk score then goes up for reachable, public, sensitive flaws, and down for unreachable or internal ones. That is why the report is sorted by risk score, not just by bug type.</p>
-  </div>
+<section class="hero">
+<span class="eyebrow">Mini Project • Nagarjuna College of Engineering and Technology, Bengaluru</span>
+<h1>AI-<span>Sentinel</span></h1>
+<p class="lead">Intelligent Security Analysis of AI-Generated Software</p>
+<p>AI coding assistants make development faster, but the code they generate is not automatically secure. It may hide SQL injection, XSS, hardcoded credentials, command injection, insecure authentication, and improper input validation. AI-Sentinel analyzes that code, understands its context, and prioritizes what to fix first, so you spend review time on real risk, not on noise.</p>
+<div class="hero-cta">
+<button class="primary" onclick="document.getElementById('analyzer').scrollIntoView({behavior:'smooth'})">Analyze code now</button>
+<button class="ghost" onclick="loadSample('wrong_code_for_testing.py')">Try the wrong code test</button>
+<button class="ghost" onclick="loadSample('secure_example.py')">Try the secure code</button>
 </div>
-<footer>Built with Python + Flask, analysis runs locally with no external API. A clean scan means none of the checked patterns matched — it is not a guarantee of perfect security.</footer>
+<div class="kpis">
+<div class="kpi"><b>8</b> vulnerability families<br><span style="color:#9AA5B1">from the presentation</span></div>
+<div class="kpi"><b>13</b> checks in this build<br><span style="color:#9AA5B1">AST + taint + context</span></div>
+<div class="kpi"><b>4</b> risk levels<br><span style="color:#9AA5B1">Critical • High • Medium • Low</span></div>
+<div class="kpi"><b>0</b> code leaves your machine<br><span style="color:#9AA5B1">in the standalone version</span></div>
+</div>
+</section>
+
+<section class="section" id="pipeline">
+<h2>How it works — the presentation pipeline</h2>
+<p class="sub">From the Proposed System slide: the system examines potentially dangerous operations and their surrounding context before assigning a risk level.</p>
+<div class="pipeline">
+<div class="pipe"><b>AI-Generated Code</b><span>paste or upload</span></div><span class="arrow">→</span>
+<div class="pipe"><b>Code Preprocessing</b><span>clean + parse</span></div><span class="arrow">→</span>
+<div class="pipe"><b>Tokenization / AST</b><span>Python AST</span></div><span class="arrow">→</span>
+<div class="pipe"><b>Security Analysis</b><span>rules + patterns</span></div><span class="arrow">→</span>
+<div class="pipe"><b>Context Analysis</b><span>data flow + routes</span></div><span class="arrow">→</span>
+<div class="pipe"><b>Vulnerability Detection</b><span>find the flaw</span></div><span class="arrow">→</span>
+<div class="pipe"><b>Risk Prioritization</b><span>rank by risk</span></div><span class="arrow">→</span>
+<div class="pipe"><b>Security Report</b><span>fix + explanation</span></div>
+</div>
+</section>
+
+<section class="section" id="analyzer">
+<h2>Analyzer</h2>
+<p class="sub">Try a sample first, or paste your own AI-generated Python code. Traditional scanners produce many warnings without distinguishing practical importance — this one sorts by risk, and tells you why.</p>
+<div class="grid">
+<div class="card">
+<h2>1. Your code</h2>
+<p class="hint">Samples are built in. <span id="fileName"></span></p>
+<div class="row" id="sampleBtns"></div>
+<textarea id="code" placeholder="Paste Python code here..."></textarea>
+<div class="row"><input type="file" id="fileInput" accept=".py,.txt"></div>
+<h3>2. Context (this changes the ranking)</h3>
+<div class="row">
+<label>Deployment <select id="deployment"><option value="public_api">Public web API</option><option value="internal">Internal tool</option></select></label>
+<label><input type="checkbox" id="sensitiveData"> Handles sensitive data</label>
+</div>
+<p class="hint">Same bug, different context, different priority. Try the same sample as Public API vs Internal tool and watch the scores move.</p>
+<div class="row"><button class="primary" id="analyzeBtn">Analyze code</button></div>
+</div>
+<div class="card" id="results"><p class="empty">Paste code or try a sample, then press Analyze.</p></div>
+</div>
+</section>
+
+<section class="section" id="correctedSection" style="display:none">
+<div class="card">
+<h2>Corrected code — for the errors above</h2>
+<p class="hint" id="correctedSummary"></p>
+<h3>What was changed</h3>
+<ul class="why" id="correctedChanges"></ul>
+<pre id="correctedCode"></pre>
+<div class="row">
+<button class="primary" id="copyFixedBtn">Copy corrected code</button>
+<button class="secondary" id="downloadFixedBtn">Download corrected .py</button>
+<button class="secondary" id="useFixedBtn">Use this code and re-analyze</button>
+</div>
+<p class="hint">Review the corrected code before using it. Operations that cannot be made safe automatically are restricted or removed, and some routes may need your own allowlisted logic to work exactly as before.</p>
+</div>
+</section>
+
+<section class="section" id="modules">
+<h2>Major modules</h2>
+<p class="sub">From slide 9 of the presentation, in the order the code flows through them.</p>
+<div class="tiles">
+<div class="tile"><span class="num">1</span><b>User Input Module</b><p>Accepts source code by upload or copy/paste.</p></div>
+<div class="tile"><span class="num">2</span><b>Code Preprocessing Module</b><p>Tokenization, syntax analysis, and AST generation where supported.</p></div>
+<div class="tile"><span class="num">3</span><b>Vulnerability Detection Module</b><p>Identifies common security weaknesses.</p></div>
+<div class="tile"><span class="num">4</span><b>Context-Aware Analysis Module</b><p>Examines surrounding code, data flow, validation, and sensitive operations.</p></div>
+<div class="tile"><span class="num">5</span><b>Risk Prioritization Module</b><p>Categorizes issues as Critical, High, Medium, or Low.</p></div>
+<div class="tile"><span class="num">6</span><b>Report Generation Module</b><p>Displays vulnerabilities, locations, explanations, and recommendations.</p></div>
+</div>
+</section>
+
+<section class="section" id="vulnerabilities">
+<h2>Vulnerabilities detected</h2>
+<p class="sub">From slide 11. This build also checks eval/exec, pickle/YAML, SSRF, insecure random, debug mode, and routes without a login check.</p>
+<div class="tiles">
+<div class="tile"><b>SQL Injection</b><p>Input built into a query. Fix: parameterized queries / prepared statements.</p></div>
+<div class="tile"><b>Cross-Site Scripting (XSS)</b><p>User input rendered as HTML without escaping.</p></div>
+<div class="tile"><b>Hardcoded Credentials</b><p>Secrets written in code. Fix: environment variables, never commit them.</p></div>
+<div class="tile"><b>Command Injection</b><p>Input reaching a shell command.</p></div>
+<div class="tile"><b>Path Traversal</b><p>Input used as a file path, with ../ to escape the folder.</p></div>
+<div class="tile"><b>Weak Cryptography</b><p>MD5 / SHA1 for security use, instead of strong hashing.</p></div>
+<div class="tile"><b>Insecure Authentication</b><p>Sensitive routes with no login check.</p></div>
+<div class="tile"><b>Improper Input Validation</b><p>Untrusted input reaching a dangerous operation unchecked.</p></div>
+</div>
+<p class="hint">Example mitigation from the presentation: use parameterized queries or prepared statements for SQL queries.</p>
+</section>
+
+<section class="section" id="risk">
+<h2>Risk prioritization</h2>
+<p class="sub">Risk factors from slide 12: vulnerability severity, exploitability, exposure, data sensitivity, application context, and existing security controls. The exact level depends on the surrounding application — that is why the same SQL injection can be High in one context and Critical on a public route with no auth.</p>
+<div class="risk-grid">
+<div class="risk Critical"><b>Critical</b><p>Fix first. Reachable, public, and sensitive — for example SQL injection on a public login route.</p></div>
+<div class="risk High"><b>High</b><p>Fix soon. Serious flaw, or a critical pattern in a less exposed context.</p></div>
+<div class="risk Medium"><b>Medium</b><p>Fix in the next pass. Real weakness, lower exposure or impact.</p></div>
+<div class="risk Low"><b>Low</b><p>Fix when convenient. Best-practice issue, or not reachable from user input here.</p></div>
+</div>
+<p class="hint" style="margin-top:12px">Presentation example: SQL Injection → CWE-89 → High risk → use parameterized queries / prepared statements. In this tool, that same finding moves up or down with taint flow, route exposure, and sensitive data.</p>
+</section>
+
+<section class="section">
+<h2>Why context matters</h2>
+<div class="tiles">
+<div class="tile"><b>Traditional tools</b><p>Examine code without executing it, may produce false positives, and have limited understanding of application context.</p></div>
+<div class="tile"><b>Manual review</b><p>Depends on security experts and is time-consuming for large projects.</p></div>
+<div class="tile"><b>AI-Sentinel</b><p>Looks at code structure, data flow, input sources, surrounding functions, and sensitive operations before ranking.</p></div>
+</div>
+<div class="note" style="margin-top:14px"><b>Honest limit, from the presentation:</b> a prototype cannot guarantee software is completely secure, detection can have false positives or false negatives, and human security review may still be required for high-risk applications. A clean scan here means none of the checked patterns matched, not that the code is perfectly secure.</div>
+<p class="hint" style="margin-top:12px">Built with Python, Flask, HTML, CSS and JavaScript, and Python AST — following the presentation's architecture. Future work from the presentation: more languages, real-time IDE integration, GitHub/GitLab and CI/CD integration, and improved data-flow analysis.</p>
+</section>
+</div>
+<footer>AI-Sentinel — Intelligent Security Analysis of AI-Generated Software • Mini Project Presentation, Nagarjuna College of Engineering and Technology, Bengaluru. Content and pipeline follow the uploaded presentation; this build uses AST + rule-based analysis, not a trained ML model, so ML/DL items from the presentation are future work, not current claims.</footer>
 <script src="/static/app.js"></script>
 </body>
 </html>
